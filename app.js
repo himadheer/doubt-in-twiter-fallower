@@ -49,7 +49,7 @@ Method: POST  */
 app.post("/register/", async (request, response) => {
   const { username, password, name, gender } = request.body;
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await bcrypt.hash(password, 15);
 
   const selectUserQ = `
 
@@ -147,11 +147,10 @@ app.post("/login/", async (request, response) => {
     if (isPasswordMatched === true) {
       const payload = { username: username };
 
-      const userObject = dbUser
-
       const jwtToken = jwt.sign(payload, "secret_key");
 
       response.send({ jwtToken });
+      console.log(jwtToken);
     } else {
       response.status(400);
 
@@ -182,7 +181,7 @@ const authentification = (request, response, next) => {
 
         response.send("Invalid JWT Token");
       } else {
-        request.userObject = userObject.dbUser
+        request.username = payload.username;
         next();
       }
     });
@@ -199,9 +198,7 @@ app.get("/users/", async (request, response) => {
 
            FROM
 
-            follower left join tweet on
-
-            follower.follower_user_id = tweet.user_id
+            user
 
             ;`;
 
@@ -209,8 +206,8 @@ app.get("/users/", async (request, response) => {
 
   response.send(data);
 });
-*/
 
+*/
 /*
 
 API 3
@@ -272,16 +269,22 @@ Description:
 Returns the list of all names of people whom the user follows*/
 
 app.get("/user/following/", authentification, async (request, response) => {
+  const { username } = request;
 
-   let  {userObject} = request
+ 
+  const loggedInUserQ = `SELECT
+                            user_id
+                        FROM
+                          user
+                        WHERE
+                          username = '${username}'`;
+
+  const loggedInUserId = await database.get(loggedInUserQ);
 
   const Q = `
-
                SELECT
 
                    user.name
-
-                
 
                FROM
 
@@ -291,8 +294,7 @@ app.get("/user/following/", authentification, async (request, response) => {
 
                WHERE
                 
-                follower.follower_user_id = ${userObject.user_id}
-
+                follower.follower_user_id = ${loggedInUserQ}
 
                  `;
 
